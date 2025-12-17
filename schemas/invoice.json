@@ -1,0 +1,178 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Invoice",
+  "description": "Industry-standard invoice data extraction schema based on Azure Document Intelligence",
+  "type": "object",
+  "properties": {
+    "VendorName": {
+      "type": "string",
+      "description": "Name of the vendor or supplier"
+    },
+    "VendorAddress": {
+      "type": "string",
+      "description": "Full address of the vendor"
+    },
+    "VendorTaxId": {
+      "type": "string",
+      "description": "Tax ID or EIN of the vendor"
+    },
+    "CustomerName": {
+      "type": "string",
+      "description": "Name of the customer or bill-to party"
+    },
+    "CustomerId": {
+      "type": "string",
+      "description": "Customer account number or ID"
+    },
+    "CustomerAddress": {
+      "type": "string",
+      "description": "Full billing address of the customer"
+    },
+    "ShippingAddress": {
+      "type": "string",
+      "description": "Shipping or delivery address if different from billing"
+    },
+    "InvoiceId": {
+      "type": "string",
+      "description": "Unique invoice number or identifier"
+    },
+    "InvoiceDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Invoice issue date (ISO 8601 format: YYYY-MM-DD)"
+    },
+    "DueDate": {
+      "type": "string",
+      "format": "date",
+      "description": "Payment due date (ISO 8601 format: YYYY-MM-DD)"
+    },
+    "PurchaseOrder": {
+      "type": "string",
+      "description": "Purchase order number if referenced"
+    },
+    "Items": {
+      "type": "array",
+      "description": "Line items from all pages of the invoice",
+      "items": {
+        "type": "object",
+        "properties": {
+          "Date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of service or delivery for this line item"
+          },
+          "Description": {
+            "type": "string",
+            "description": "Full description of the item or service"
+          },
+          "Quantity": {
+            "type": "number",
+            "description": "Quantity or hours"
+          },
+          "Unit": {
+            "type": "string",
+            "description": "Unit of measure (hours, each, etc.)"
+          },
+          "UnitPrice": {
+            "type": "number",
+            "description": "Price per unit"
+          },
+          "Amount": {
+            "type": "number",
+            "description": "Total amount for this line item (Quantity × UnitPrice)"
+          },
+          "ProductCode": {
+            "type": "string",
+            "description": "Product or service code if applicable"
+          },
+          "Tax": {
+            "type": "number",
+            "description": "Tax amount for this line item if itemized"
+          },
+          "TaxRate": {
+            "type": "string",
+            "description": "Tax rate percentage if shown"
+          }
+        },
+        "required": ["Description", "Amount"]
+      }
+    },
+    "SubTotal": {
+      "type": "number",
+      "description": "Subtotal before tax and discounts"
+    },
+    "TotalTax": {
+      "type": "number",
+      "description": "Total tax amount"
+    },
+    "TotalDiscount": {
+      "type": "number",
+      "description": "Total discount amount if applicable"
+    },
+    "InvoiceTotal": {
+      "type": "number",
+      "description": "Final total amount due"
+    },
+    "AmountDue": {
+      "type": "number",
+      "description": "Outstanding amount due (may differ from total if partial payment made)"
+    },
+    "PreviousUnpaidBalance": {
+      "type": "number",
+      "description": "Previous balance carried forward"
+    },
+    "PaymentTerms": {
+      "type": "string",
+      "description": "Payment terms (e.g., Net 30, Due on Receipt)"
+    },
+    "PaymentDetails": {
+      "type": "object",
+      "description": "Banking details for payment",
+      "properties": {
+        "BankAccountNumber": {
+          "type": "string"
+        },
+        "IBAN": {
+          "type": "string"
+        },
+        "SWIFT": {
+          "type": "string"
+        },
+        "RoutingNumber": {
+          "type": "string"
+        }
+      }
+    },
+    "TaxDetails": {
+      "type": "array",
+      "description": "Breakdown of taxes by type or rate",
+      "items": {
+        "type": "object",
+        "properties": {
+          "TaxType": {
+            "type": "string",
+            "description": "Type of tax (Sales, VAT, GST, etc.)"
+          },
+          "Rate": {
+            "type": "string",
+            "description": "Tax rate percentage"
+          },
+          "Amount": {
+            "type": "number",
+            "description": "Tax amount"
+          }
+        }
+      }
+    },
+    "Currency": {
+      "type": "string",
+      "description": "Currency code (USD, EUR, etc.)",
+      "default": "USD"
+    },
+    "Notes": {
+      "type": "string",
+      "description": "Additional notes or special instructions"
+    }
+  },
+  "required": ["VendorName", "InvoiceId", "InvoiceDate", "InvoiceTotal", "Items"]
+}

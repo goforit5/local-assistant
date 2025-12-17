@@ -1,0 +1,122 @@
+# Prompt Configuration: Invoice to Commitment
+# Service: commitment-creation
+# Version: 1.0.0
+
+name: invoice_to_commitment
+version: 1.0.0
+description: Generate a commitment (obligation) from an invoice
+
+system_prompt: |
+  You are an expert financial assistant that creates actionable commitments from invoices.
+
+  Your task is to extract key information from an invoice and generate a structured commitment.
+
+  Commitment Fields:
+  - title: Clear, actionable title (e.g., "Pay ACME Corp Invoice #12345")
+  - commitment_type: Always "obligation" for invoices
+  - due_date: Payment due date from invoice
+  - amount: Total amount due
+  - domain: Always "Finance" for invoices
+  - description: Brief description with vendor, invoice number, and line items summary
+
+  Priority Calculation Hints:
+  - Late fees or penalties → mention in description
+  - Net 30, Net 60 terms → extract from invoice
+  - Early payment discounts → mention in description
+
+user_prompt: |
+  Create a commitment from this invoice:
+
+  **Invoice Details**:
+  - Vendor: {{ vendor_name }}
+  - Invoice Number: {{ invoice_number }}
+  - Invoice Date: {{ invoice_date }}
+  - Due Date: {{ due_date }}
+  - Total Amount: {{ total_amount }}
+  - Line Items: {{ line_items }}
+  - Payment Terms: {{ payment_terms }}
+
+  Generate a structured commitment for paying this invoice.
+
+output_schema:
+  type: object
+  required:
+    - title
+    - commitment_type
+    - due_date
+    - amount
+    - domain
+    - description
+  properties:
+    title:
+      type: string
+      description: "Clear, actionable title (e.g., 'Pay ACME Corp Invoice #12345')"
+    commitment_type:
+      type: string
+      enum: ["obligation"]
+      description: "Always 'obligation' for invoices"
+    due_date:
+      type: string
+      format: date
+      description: "Payment due date (YYYY-MM-DD)"
+    amount:
+      type: number
+      description: "Total amount due"
+    domain:
+      type: string
+      enum: ["Finance"]
+      description: "Always 'Finance' for invoices"
+    description:
+      type: string
+      description: "Brief description with vendor, invoice number, line items summary"
+    estimated_hours:
+      type: number
+      description: "Estimated time to complete payment (e.g., 0.25 for 15 min)"
+    notes:
+      type: string
+      description: "Additional notes (late fees, early payment discounts, etc.)"
+  additionalProperties: false
+
+variables:
+  - name: vendor_name
+    type: string
+    required: true
+    description: "Vendor/company name"
+  - name: invoice_number
+    type: string
+    required: true
+    description: "Invoice number"
+  - name: invoice_date
+    type: string
+    required: true
+    description: "Invoice issue date"
+  - name: due_date
+    type: string
+    required: true
+    description: "Payment due date"
+  - name: total_amount
+    type: number
+    required: true
+    description: "Total amount due"
+  - name: line_items
+    type: string
+    required: false
+    description: "Summary of line items"
+  - name: payment_terms
+    type: string
+    required: false
+    description: "Payment terms (Net 30, Net 60, etc.)"
+
+performance:
+  target_latency_ms: 500
+  target_accuracy: 0.98
+  cost_per_call_usd: 0.001
+
+metadata:
+  created_date: 2025-11-06
+  last_modified: 2025-11-06
+  author: AI Dev Team
+  changelog:
+    - version: 1.0.0
+      date: 2025-11-06
+      changes: "Initial version"

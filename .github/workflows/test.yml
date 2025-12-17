@@ -1,0 +1,163 @@
+name: Tests and Quality Checks
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: assistant_test
+          POSTGRES_USER: assistant
+          POSTGRES_PASSWORD: assistant
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        uv venv
+        source .venv/bin/activate
+        uv sync
+
+    - name: Run database migrations
+      env:
+        DATABASE_URL: postgresql+asyncpg://assistant:assistant@localhost:5433/assistant_test
+      run: |
+        source .venv/bin/activate
+        alembic upgrade head
+
+    - name: Run unit tests
+      env:
+        DATABASE_URL: postgresql+asyncpg://assistant:assistant@localhost:5433/assistant_test
+      run: |
+        source .venv/bin/activate
+        pytest tests/unit/ -v --cov=services --cov=api --cov=memory --cov=observability --cov-report=xml --cov-report=term
+
+    - name: Run integration tests
+      env:
+        DATABASE_URL: postgresql+asyncpg://assistant:assistant@localhost:5433/assistant_test
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      run: |
+        source .venv/bin/activate
+        pytest tests/integration/ -v --cov-append --cov-report=xml --cov-report=term
+
+    - name: Check coverage threshold
+      run: |
+        source .venv/bin/activate
+        coverage report --fail-under=80
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        uv venv
+        source .venv/bin/activate
+        uv sync
+
+    - name: Run ruff (linter)
+      run: |
+        source .venv/bin/activate
+        ruff check . --output-format=github
+
+    - name: Run ruff (formatter check)
+      run: |
+        source .venv/bin/activate
+        ruff format --check .
+
+  type-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        uv venv
+        source .venv/bin/activate
+        uv sync
+
+    - name: Run mypy
+      run: |
+        source .venv/bin/activate
+        mypy services/ api/ memory/ observability/ --strict --install-types --non-interactive || true
+
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'

@@ -1,0 +1,338 @@
+{
+  "dashboard": {
+    "title": "Life Graph - Document Intelligence Pipeline",
+    "tags": ["lifegraph", "documents", "commitments"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Documents Processed (Total)",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(lifegraph_documents_processed_total)",
+            "legendFormat": "Total Documents"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 50, "color": "yellow"},
+                {"value": 100, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Active Commitments",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(lifegraph_active_commitments_count)",
+            "legendFormat": "Active"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "blue"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Vendor Deduplication Rate",
+        "type": "gauge",
+        "gridPos": {"h": 6, "w": 6, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "lifegraph_vendor_deduplication_rate",
+            "legendFormat": "Dedup %"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "red"},
+                {"value": 70, "color": "yellow"},
+                {"value": 90, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Extraction Cost (Today)",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 6, "x": 18, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(rate(lifegraph_extraction_cost_dollars_total[24h]))",
+            "legendFormat": "Cost/Day"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "decimals": 2,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 10, "color": "yellow"},
+                {"value": 50, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Document Processing Throughput",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+        "targets": [
+          {
+            "expr": "rate(lifegraph_documents_processed_total[5m])",
+            "legendFormat": "{{extraction_type}}"
+          }
+        ],
+        "yaxes": [
+          {"label": "docs/sec", "show": true},
+          {"show": false}
+        ],
+        "xaxis": {"show": true, "mode": "time"}
+      },
+      {
+        "id": 6,
+        "title": "Extraction Latency (P95)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(lifegraph_extraction_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95 - {{extraction_type}}"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(lifegraph_extraction_duration_seconds_bucket[5m]))",
+            "legendFormat": "P50 - {{extraction_type}}"
+          }
+        ],
+        "yaxes": [
+          {"label": "seconds", "show": true, "min": 0},
+          {"show": false}
+        ],
+        "xaxis": {"show": true, "mode": "time"}
+      },
+      {
+        "id": 7,
+        "title": "Commitment Priority Distribution",
+        "type": "heatmap",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14},
+        "targets": [
+          {
+            "expr": "sum(rate(lifegraph_commitment_priority_distribution_bucket[5m])) by (le)",
+            "legendFormat": "{{le}}",
+            "format": "heatmap"
+          }
+        ],
+        "dataFormat": "tsbuckets",
+        "heatmap": {
+          "yAxis": {
+            "format": "short",
+            "decimals": 0,
+            "logBase": 1
+          },
+          "color": {
+            "mode": "spectrum",
+            "scheme": "RdYlGn",
+            "cardColor": "#b4ff00"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Active Commitments by Domain",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14},
+        "targets": [
+          {
+            "expr": "sum(lifegraph_active_commitments_count) by (domain)",
+            "legendFormat": "{{domain}}"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "pieType": "pie",
+          "displayLabels": ["name", "percent"]
+        }
+      },
+      {
+        "id": 9,
+        "title": "Vendor Resolution Accuracy",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 22},
+        "targets": [
+          {
+            "expr": "rate(lifegraph_vendor_resolutions_total{matched=\"true\"}[5m]) / rate(lifegraph_vendor_resolutions_total[5m])",
+            "legendFormat": "Match Rate"
+          }
+        ],
+        "yaxes": [
+          {"label": "rate", "show": true, "min": 0, "max": 1, "format": "percentunit"},
+          {"show": false}
+        ],
+        "xaxis": {"show": true, "mode": "time"},
+        "thresholds": [
+          {"value": 0.9, "colorMode": "critical", "op": "gt", "fill": true, "line": true}
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Pipeline End-to-End Duration",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 22},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(lifegraph_pipeline_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(lifegraph_pipeline_duration_seconds_bucket[5m]))",
+            "legendFormat": "P50"
+          }
+        ],
+        "yaxes": [
+          {"label": "seconds", "show": true, "min": 0, "max": 30},
+          {"show": false}
+        ],
+        "xaxis": {"show": true, "mode": "time"},
+        "alert": {
+          "name": "Pipeline latency too high",
+          "conditions": [
+            {
+              "evaluator": {"params": [2], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "5m", "now"]},
+              "reducer": {"params": [], "type": "avg"},
+              "type": "query"
+            }
+          ]
+        }
+      },
+      {
+        "id": 11,
+        "title": "Document Links Created",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 30},
+        "targets": [
+          {
+            "expr": "rate(lifegraph_document_links_created_total[5m])",
+            "legendFormat": "{{entity_type}}"
+          }
+        ],
+        "yaxes": [
+          {"label": "links/sec", "show": true},
+          {"show": false}
+        ],
+        "xaxis": {"show": true, "mode": "time"}
+      },
+      {
+        "id": 12,
+        "title": "Extraction Costs by Model",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 30},
+        "targets": [
+          {
+            "expr": "rate(lifegraph_extraction_cost_dollars_total[1h])",
+            "legendFormat": "{{model}} - {{extraction_type}}"
+          }
+        ],
+        "yaxes": [
+          {"label": "$/hour", "show": true, "format": "currencyUSD"},
+          {"show": false}
+        ],
+        "xaxis": {"show": true, "mode": "time"},
+        "stack": true
+      },
+      {
+        "id": 13,
+        "title": "Pipeline Errors",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 38},
+        "targets": [
+          {
+            "expr": "rate(lifegraph_pipeline_errors_total[5m])",
+            "legendFormat": "{{stage}} - {{error_type}}"
+          }
+        ],
+        "yaxes": [
+          {"label": "errors/sec", "show": true},
+          {"show": false}
+        ],
+        "xaxis": {"show": true, "mode": "time"},
+        "alert": {
+          "name": "High pipeline error rate",
+          "conditions": [
+            {
+              "evaluator": {"params": [0.1], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "5m", "now"]},
+              "reducer": {"params": [], "type": "avg"},
+              "type": "query"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

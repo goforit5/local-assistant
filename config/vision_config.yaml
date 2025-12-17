@@ -1,0 +1,220 @@
+# Vision & OCR Configuration
+# Document processing, image analysis, structured extraction
+# Version: 1.0.0
+
+ocr:
+  engines:
+    tesseract:
+      enabled: true
+      executable: tesseract
+      languages: [eng, spa, fra, deu, chi_sim, jpn, kor, rus, ara, hin]
+      config:
+        psm: 3  # Page segmentation mode: 3 = Fully automatic page segmentation
+        oem: 3  # OCR engine mode: 3 = Default (LSTM neural nets)
+        dpi: 300
+      timeout: 30
+
+    easyocr:
+      enabled: true
+      gpu: false  # Set to true if CUDA available
+      languages: [en, es, fr, de, zh_sim, ja, ko, ru, ar, hi]
+      config:
+        detail: 1  # 0 = simple, 1 = detailed
+        paragraph: false
+        min_confidence: 0.5
+      timeout: 60
+
+  fallback_strategy: tesseract_first
+  # Options: tesseract_first, easyocr_first, parallel_best, cost_optimized
+
+  confidence_thresholds:
+    high: 0.90
+    medium: 0.75
+    low: 0.50
+
+document_processing:
+  pdf:
+    max_pages: 100
+    max_file_size_mb: 50
+    dpi: 300
+    image_format: png  # png, jpg, tiff
+    extract_images: true
+    extract_text: true
+    extract_tables: true
+    poppler_path: null  # Auto-detect or set path
+
+  images:
+    supported_formats: [png, jpg, jpeg, heic, heif, webp, tiff, bmp, gif]
+    max_size_mb: 20
+    auto_resize: true
+    target_width: 1920
+    target_height: 1080
+    maintain_aspect_ratio: true
+    quality: 95
+
+  preprocessing:
+    enabled: true
+    operations:
+      - deskew  # Correct page rotation
+      - denoise  # Remove noise
+      - contrast_enhance  # Improve contrast
+      - sharpen  # Sharpen text
+    thresholds:
+      deskew_angle: 0.5  # Degrees
+      noise_threshold: 10
+
+structured_extraction:
+  schemas_dir: ./schemas
+
+  document_types:
+    invoice:
+      fields: [invoice_number, date, due_date, total, subtotal, tax, vendor, line_items]
+      required_fields: [invoice_number, date, total, vendor]
+      validation: strict
+
+    receipt:
+      fields: [merchant, date, time, total, subtotal, tax, items, payment_method]
+      required_fields: [merchant, date, total]
+      validation: relaxed
+
+    form:
+      detect_checkboxes: true
+      detect_radio_buttons: true
+      detect_signatures: true
+      detect_handwriting: true
+      preserve_layout: true
+
+    table:
+      preserve_formatting: true
+      detect_merged_cells: true
+      output_formats: [json, csv, markdown, html]
+      include_headers: true
+
+    business_card:
+      fields: [name, title, company, email, phone, address, website]
+      ocr_enhance: true
+
+    id_document:
+      fields: [name, id_number, date_of_birth, expiry_date, issuing_authority]
+      redaction_enabled: true
+      require_confirmation: true
+
+gpt4o_vision:
+  model: gpt-4o-2024-11-20
+  detail: high  # Options: low, high, auto
+  max_tokens: 4096
+  temperature: 0.2  # Lower for structured extraction
+  timeout: 60
+
+  # NEW: OpenAI Structured Outputs (2024+)
+  # Uses response_format={"type": "json_schema"} for guaranteed schema adherence
+  # See: https://platform.openai.com/docs/guides/structured-outputs
+  structured_output:
+    enabled: true
+    strict: true  # Enforces exact schema compliance (no hallucinations)
+
+    # Pydantic models are defined in services/vision/models.py
+    # JSON schemas auto-generated from Pydantic models
+    models:
+      invoice: services.vision.models.Invoice  # Industry-standard invoice extraction
+      receipt: services.vision.models.Receipt
+      form: services.vision.models.Form
+
+    # Multi-page processing: ALL pages in ONE API call
+    # GPT-4o supports up to 16 images per request (or 100 PDF pages)
+    # This is 70% cheaper and eliminates redundant header/footer extraction
+    multi_page_mode: single_call  # Options: single_call, per_page (legacy)
+
+  cost_optimization:
+    use_ocr_for_simple_docs: true
+    ocr_confidence_threshold: 0.85
+    batch_pages: false  # Deprecated - use multi_page_mode: single_call instead
+    cache_results: true
+    cache_ttl: 3600  # seconds
+
+  prompts:
+    # Updated for multi-page context awareness
+    invoice: |
+      Extract complete invoice data from this multi-page invoice document.
+
+      IMPORTANT CONTEXT:
+      - The vendor information, invoice number, and date typically appear on page 1 only
+      - Line items span across multiple pages - consolidate ALL line items from ALL pages
+      - The subtotal and total typically appear on the last page
+      - Do NOT repeat vendor/header information for each page
+
+      Return ONE consolidated JSON object with:
+      - Vendor details from the first page
+      - ALL line items aggregated from every page
+      - Financial totals from the last page
+
+      Ensure all monetary values are accurate to 2 decimal places.
+
+    receipt: |
+      Extract all information from this receipt.
+      Return structured JSON with merchant, date, total, items, and tax.
+      Calculate totals if not explicitly shown.
+
+    table: |
+      Extract the table from this image preserving the exact structure.
+      Return JSON with headers and rows, maintaining data types.
+
+    form: |
+      Extract all form fields including checkboxes and signatures.
+      Identify field names and their values clearly.
+
+claude_vision:
+  model: claude-sonnet-4-20250514
+  max_tokens: 8192
+  temperature: 0.0
+  timeout: 300
+
+  use_cases: [complex_analysis, multi_page_context, detailed_extraction]
+
+output:
+  formats: [json, markdown, text, csv, html]
+  default_format: json
+
+  save_options:
+    save_originals: true
+    save_annotated: true  # Save with bounding boxes
+    save_intermediate: false  # Save preprocessing steps
+    compression: true
+    compression_format: gzip
+
+  paths:
+    output_dir: ./output
+    cache_dir: ./cache/vision
+    temp_dir: ./tmp/vision
+
+quality_assurance:
+  enabled: true
+  validation:
+    check_field_types: true
+    check_required_fields: true
+    check_value_ranges: true
+    check_date_formats: true
+    check_currency_formats: true
+
+  verification:
+    cross_check_totals: true
+    verify_calculations: true
+    detect_duplicates: true
+
+  confidence_reporting:
+    enabled: true
+    include_per_field: true
+    min_acceptable: 0.75
+
+batch_processing:
+  enabled: true
+  max_concurrent: 5
+  batch_size: 10
+  retry_failed: true
+  max_retries: 3
+  retry_delay: 2.0
+
+  priority_queue:
+    enabled: true
+    priorities: [urgent, high, normal, low]
+    default: normal

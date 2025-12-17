@@ -1,0 +1,144 @@
+# Prompt Configuration: Party Deduplication
+# Service: entity-resolution
+# Version: 1.0.0
+
+name: party_deduplication
+version: 1.0.0
+description: Determine if two party records (person/org) should be merged
+
+system_prompt: |
+  You are an expert entity resolution system for deduplicating party records.
+  A "party" can be either a person or an organization.
+
+  Your task is to determine if two party records represent the same real-world entity.
+
+  Matching Signals (Organizations):
+  - Exact name match (case-insensitive)
+  - Tax ID / EIN match (100% confidence)
+  - Domain match (email/website)
+  - Address similarity (street, city, state, zip)
+
+  Matching Signals (People):
+  - Name match (handle nicknames, middle names)
+  - Email match
+  - Phone match
+  - Address match
+
+  Edge Cases:
+  - Same company, different divisions (DON'T merge)
+  - Acquired companies (check date, DON'T auto-merge)
+  - Name changes (mergers, rebranding) → manual review
+
+user_prompt: |
+  Determine if these two party records should be merged:
+
+  **Party 1**:
+  - Kind: {{ party1_kind }}
+  - Name: {{ party1_name }}
+  - Tax ID: {{ party1_tax_id }}
+  - Email: {{ party1_email }}
+  - Address: {{ party1_address }}
+
+  **Party 2**:
+  - Kind: {{ party2_kind }}
+  - Name: {{ party2_name }}
+  - Tax ID: {{ party2_tax_id }}
+  - Email: {{ party2_email }}
+  - Address: {{ party2_address }}
+
+  Should these be merged?
+
+output_schema:
+  type: object
+  required:
+    - should_merge
+    - confidence
+    - reasoning
+    - recommended_action
+  properties:
+    should_merge:
+      type: boolean
+      description: "True if same entity, false otherwise"
+    confidence:
+      type: number
+      description: "Confidence score (0.0-1.0)"
+    reasoning:
+      type: string
+      description: "Detailed explanation for decision"
+    recommended_action:
+      type: string
+      enum: ["auto_merge", "manual_review", "keep_separate"]
+    matching_fields:
+      type: array
+      description: "List of matching fields"
+      items:
+        type: string
+    conflicting_fields:
+      type: array
+      description: "List of conflicting fields"
+      items:
+        type: object
+        properties:
+          field:
+            type: string
+          party1_value:
+            type: string
+          party2_value:
+            type: string
+  additionalProperties: false
+
+variables:
+  - name: party1_kind
+    type: string
+    required: true
+    description: "Party type: 'person' or 'org'"
+  - name: party1_name
+    type: string
+    required: true
+    description: "Party 1 name"
+  - name: party1_tax_id
+    type: string
+    required: false
+    description: "Party 1 tax ID"
+  - name: party1_email
+    type: string
+    required: false
+    description: "Party 1 email"
+  - name: party1_address
+    type: string
+    required: false
+    description: "Party 1 address"
+  - name: party2_kind
+    type: string
+    required: true
+    description: "Party type: 'person' or 'org'"
+  - name: party2_name
+    type: string
+    required: true
+    description: "Party 2 name"
+  - name: party2_tax_id
+    type: string
+    required: false
+    description: "Party 2 tax ID"
+  - name: party2_email
+    type: string
+    required: false
+    description: "Party 2 email"
+  - name: party2_address
+    type: string
+    required: false
+    description: "Party 2 address"
+
+performance:
+  target_latency_ms: 500
+  target_accuracy: 0.95
+  cost_per_call_usd: 0.001
+
+metadata:
+  created_date: 2025-11-06
+  last_modified: 2025-11-06
+  author: AI Dev Team
+  changelog:
+    - version: 1.0.0
+      date: 2025-11-06
+      changes: "Initial version"

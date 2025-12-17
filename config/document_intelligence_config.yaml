@@ -1,0 +1,83 @@
+# Document Intelligence Pipeline Configuration
+# Version: 1.0.0
+# Last Updated: 2025-11-06
+
+pipeline:
+  name: document-intelligence
+  version: 1.0.0
+  description: Document upload → entity resolution → commitment creation
+
+# Vision Extraction Step
+vision_extraction:
+  enabled: true
+  models:
+    - gpt-4o  # Primary vision model
+  overrides:
+    gpt-4o:
+      max_tokens: 16384
+      temperature: 0.0
+  cost_limits:
+    per_document_warn: 0.05   # Warn if extraction > $0.05
+    per_document_max: 0.10    # Fail if extraction > $0.10
+  timeout_seconds: 60
+
+# Signal Processing
+signal_processing:
+  enabled: true
+  dedupe_window_days: 7       # Ignore duplicate uploads within 7 days
+  classification:
+    confidence_threshold: 0.80  # Require 80%+ confidence for auto-classification
+    fallback_to_manual: true    # Queue low-confidence for review
+
+# Entity Resolution
+entity_resolution:
+  vendor_matching:
+    fuzzy_threshold: 0.90      # 90%+ similarity = match
+    use_trigram_index: true    # Use PostgreSQL pg_trgm
+    max_candidates: 5          # Return top 5 matches
+    cache_ttl_seconds: 3600    # Cache vendor lookups for 1 hour
+  party_deduplication:
+    check_tax_id: true
+    check_address: true
+    confidence_levels:
+      exact_match: 1.00         # name + tax_id match
+      high_confidence: 0.90     # fuzzy name + address match
+      medium_confidence: 0.80   # fuzzy name only
+      low_confidence: 0.60      # queue for manual review
+
+# Commitment Creation
+commitment_creation:
+  auto_create_for_types:
+    - invoice                  # Always create "Pay Invoice" commitment
+    - bill                     # Always create "Pay Bill" commitment
+    - tax_notice               # Always create "File Taxes" commitment
+  default_role_domain: Finance  # Default domain if not specified
+  priority_calculation:
+    time_weight: 0.30          # 30% weight for time pressure
+    severity_weight: 0.25      # 25% weight for severity/risk
+    amount_weight: 0.15        # 15% weight for dollar amount
+    effort_weight: 0.15        # 15% weight for estimated hours
+    dependency_weight: 0.10    # 10% weight for blockers
+    preference_weight: 0.05    # 5% weight for user boost
+
+# Document Storage
+storage:
+  backend: local               # "local" | "s3" | "gcs"
+  local:
+    base_path: ./data/documents
+    max_file_size_mb: 50
+  content_addressable: true    # Use SHA-256 as filename
+  retention_days: null         # null = keep forever
+
+# Interaction Logging
+interaction_logging:
+  enabled: true
+  include_cost: true
+  include_metadata: true
+  audit_trail: immutable       # Append-only, never delete
+
+# Performance
+performance:
+  max_concurrent_extractions: 5
+  database_pool_size: 10
+  cache_entity_lookups: true

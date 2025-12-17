@@ -1,0 +1,77 @@
+# Redis Cache Configuration
+# TTL values in seconds
+
+# Global settings
+redis:
+  url: "redis://localhost:6380"
+  key_prefix: "cache"
+  enable_metrics: true
+
+# Default TTL for unspecified cache types
+default_ttl: 3600  # 1 hour
+
+# Per-namespace TTL configuration
+ttl_by_namespace:
+  # Document extraction results (7 days)
+  # Vision API results are expensive and rarely change
+  doc_extract: 604800
+
+  # Entity resolution lookups (24 hours)
+  # Entity matches may change as new data is added
+  entity_match: 86400
+
+  # Vision analysis results (30 days)
+  # Raw vision results are immutable and expensive to regenerate
+  vision_result: 2592000
+
+  # Document classification (7 days)
+  # Classification rarely changes for same document
+  doc_classify: 604800
+
+  # Vendor lookup results (12 hours)
+  # Vendor data may be updated frequently
+  vendor_lookup: 43200
+
+  # Commitment creation (1 hour)
+  # Short TTL as commitments may be edited
+  commitment_cache: 3600
+
+  # File hash lookups (30 days)
+  # Content-addressable, immutable
+  file_hash: 2592000
+
+  # API response cache (5 minutes)
+  # Short-lived for API responses
+  api_response: 300
+
+# Cache invalidation patterns
+# These patterns can be used with invalidate_pattern() to clear related caches
+invalidation_patterns:
+  all_documents: "cache:doc_*"
+  all_entities: "cache:entity_*"
+  all_vision: "cache:vision_*"
+  specific_document: "cache:doc_extract:{sha256}"
+  specific_entity: "cache:entity_match:{name_hash}"
+
+# Metrics configuration
+metrics:
+  enabled: true
+  track_hit_rate: true
+  track_latency: true
+
+# Performance tuning
+performance:
+  # Maximum size of cached objects (in bytes)
+  # Objects larger than this will not be cached
+  max_object_size: 10485760  # 10 MB
+
+  # Connection pool settings
+  connection_pool:
+    max_connections: 50
+    max_idle_time: 300
+
+# Fallback behavior when Redis is unavailable
+fallback:
+  log_warning: true
+  skip_cache: true
+  use_local_cache: false

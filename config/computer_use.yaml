@@ -1,0 +1,263 @@
+# Computer Use Configuration
+# OpenAI Responses API with Computer Use Preview
+# Version: 1.0.0
+
+openai_computer_use:
+  model: computer-use-preview
+  api_type: responses  # Uses Responses API, not Chat Completions
+
+  environments:
+    browser:
+      display_width: 1920
+      display_height: 1080
+      default_url: about:blank
+      user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+      description: Sandboxed browser environment
+
+    desktop_mac:
+      display_width: 1440
+      display_height: 900
+      description: macOS desktop environment
+
+    desktop_windows:
+      display_width: 1920
+      display_height: 1080
+      description: Windows desktop environment
+
+    desktop_ubuntu:
+      display_width: 1920
+      display_height: 1080
+      description: Ubuntu desktop environment
+
+  default_environment: browser
+
+reasoning:
+  summary: concise  # Options: concise, detailed
+  log_reasoning: true
+  include_in_output: true
+
+truncation:
+  enabled: true
+  strategy: auto  # Let OpenAI manage conversation history
+
+safety:
+  enabled: true
+  sandbox_required: true
+
+  checks:
+    malicious_instructions:
+      enabled: true
+      require_acknowledgment: true
+      description: Detects adversarial content in screenshots
+
+    irrelevant_domain:
+      enabled: true
+      require_acknowledgment: true
+      description: Checks if domain is relevant to task
+
+    sensitive_domain:
+      enabled: true
+      require_acknowledgment: true
+      watch_mode: true
+      description: Warns when on financial/auth sites
+
+  allowed_domains:
+    - "*.google.com"
+    - "*.github.com"
+    - "*.stackoverflow.com"
+    - "*.wikipedia.org"
+    - "*.openai.com"
+    - "*.anthropic.com"
+    - "localhost"
+    - "127.0.0.1"
+    - "*.local"
+
+  blocked_domains:
+    - "*.onion"
+    - "*.bit"
+    - "*.i2p"
+
+  sensitive_domains:
+    - "*.bank.com"
+    - "*.paypal.com"
+    - "*.stripe.com"
+    - "*banking*"
+    - "*credit*"
+    - "*financial*"
+    - "*.gov"
+
+  blocked_actions:
+    - financial_transfer
+    - account_deletion
+    - data_wipe
+    - system_shutdown
+    - password_change_sensitive
+
+  require_confirmation:
+    - financial_transaction
+    - account_creation
+    - data_deletion
+    - file_upload_sensitive
+    - form_submit_payment
+    - email_send
+    - password_entry
+
+timeouts:
+  per_action: 30  # seconds
+  per_step: 60
+  total_session: 600  # 10 minutes
+  screenshot_wait: 2  # Wait after action before screenshot
+
+rate_limits:
+  requests_per_minute: 50
+  requests_per_hour: 500
+  concurrent_sessions: 3
+
+action_config:
+  click:
+    buttons: [left, right, middle]
+    double_click_enabled: true
+    triple_click_enabled: false
+    wait_after: 1.0  # seconds
+
+  type:
+    rate: normal  # Options: slow, normal, fast
+    submit_after: optional
+    clear_before: false
+    wait_after: 0.5
+
+  scroll:
+    smooth: true
+    units: pixels  # pixels, lines, pages
+    max_distance: 10000
+    wait_after: 0.5
+
+  keypress:
+    supported:
+      - ENTER
+      - SPACE
+      - TAB
+      - ESC
+      - BACKSPACE
+      - DELETE
+      - HOME
+      - END
+      - PAGE_UP
+      - PAGE_DOWN
+      - ARROW_UP
+      - ARROW_DOWN
+      - ARROW_LEFT
+      - ARROW_RIGHT
+      - F1-F12
+    wait_after: 0.3
+
+  wait:
+    default_duration: 2  # seconds
+    min_duration: 0.5
+    max_duration: 10
+
+  screenshot:
+    auto_capture: true  # Capture after every action
+    format: png
+    quality: high  # high, medium, low
+    include_timestamp: true
+    save_to_disk: true
+
+audit:
+  enabled: true
+  log_level: INFO
+
+  log_items:
+    - requests
+    - responses
+    - actions
+    - screenshots
+    - safety_checks
+    - errors
+    - timings
+
+  screenshot_logging:
+    enabled: true
+    save_all: true
+    save_path: ./logs/screenshots
+    retention_days: 30
+    max_size_mb: 1000
+
+  action_logging:
+    enabled: true
+    include_coordinates: true
+    include_timing: true
+    save_path: ./logs/actions
+
+  retention:
+    logs_days: 30
+    screenshots_days: 7
+    audit_trail_days: 90
+
+error_handling:
+  retry:
+    enabled: true
+    max_attempts: 3
+    backoff: exponential
+    initial_delay: 2.0
+    max_delay: 30.0
+
+  on_failure:
+    - log_error
+    - capture_screenshot
+    - save_state
+    - notify_user
+
+  recovery:
+    auto_recover: true
+    recovery_strategies:
+      - retry_action
+      - refresh_page
+      - restart_session
+
+monitoring:
+  enabled: true
+  metrics:
+    - action_count
+    - success_rate
+    - error_rate
+    - average_duration
+    - cost_per_session
+    - safety_checks_triggered
+
+  alerts:
+    - type: high_error_rate
+      threshold: 0.20
+      action: notify
+
+    - type: safety_check_failed
+      threshold: 1
+      action: pause_and_notify
+
+    - type: session_timeout
+      threshold: 600
+      action: terminate
+
+    - type: cost_exceeded
+      threshold: 5.00
+      action: block
+
+output:
+  save_responses: true
+  save_path: ./output/computer_use
+  include_metadata: true
+  metadata_fields:
+    - timestamp
+    - model
+    - environment
+    - actions_taken
+    - cost
+    - duration
+    - safety_checks
+
+integration:
+  # For future Playwright/Selenium integration (if needed)
+  external_browser:
+    enabled: false
+    provider: null  # playwright, selenium
+    headless: false

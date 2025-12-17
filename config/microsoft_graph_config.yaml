@@ -1,0 +1,273 @@
+# Microsoft Graph Integration Configuration
+
+# Authentication settings
+authentication:
+  # OAuth flow type: "delegated" (user context) or "application" (app-only)
+  flow_type: delegated
+
+  # Token cache location (relative to home directory)
+  token_cache_path: ".local/assistant/graph/token_cache.json"
+
+  # Scopes for delegated permissions
+  delegated_scopes:
+    - Tasks.ReadWrite
+    - Tasks.ReadWrite.All
+    - Group.Read.All
+    - User.Read
+    - offline_access
+
+  # Timeout for authentication flows (seconds)
+  auth_timeout: 300
+
+# API configuration
+api:
+  # Use beta API endpoint (for preview features)
+  use_beta: false
+
+  # Request timeout (seconds)
+  timeout: 30.0
+
+  # Rate limiting
+  rate_limit:
+    max_requests: 10000
+    window_minutes: 10
+    buffer_percent: 10  # Start throttling at 90% of limit
+
+  # Retry configuration
+  retry:
+    max_attempts: 3
+    min_wait: 1
+    max_wait: 60
+    exponential_multiplier: 1
+
+# Planner configuration
+planner:
+  # Plan mappings (map plan names to Life Graph areas/domains)
+  plans:
+    - name: "Vouchra"
+      plan_id: null  # Auto-discover or set explicitly
+      area: "work"
+      domain: "product"
+
+    - name: "Brokerage Engine"
+      plan_id: null
+      area: "work"
+      domain: "engineering"
+
+    - name: "Haven Clinical"
+      plan_id: null
+      area: "work"
+      domain: "healthcare"
+
+    - name: "Life Ops"
+      plan_id: null
+      area: "personal"
+      domain: "life_management"
+
+  # Category mappings (map Planner categories to Life Graph tiers)
+  # Planner has 6 categories (category1 through category6)
+  category_mappings:
+    category1:
+      tier: 0
+      label: "Tier 0 - Critical"
+
+    category2:
+      tier: 1
+      label: "Tier 1 - Important"
+
+    category3:
+      tier: 2
+      label: "Tier 2 - Standard"
+
+    category4:
+      label: "Money/Finance"
+
+    category5:
+      label: "Engineering"
+
+    category6:
+      label: "Family/Life"
+
+  # Bucket mappings (workflow stages)
+  bucket_mappings:
+    "Intake": "backlog"
+    "Shaping": "planning"
+    "This Month": "scheduled"
+    "This Week": "this_week"
+    "In Progress": "in_progress"
+    "Blocked": "blocked"
+    "Review": "review"
+    "Done": "completed"
+
+  # Priority mapping (Planner: 0-10, where 0 is highest)
+  priority_mapping:
+    # Planner priority -> Life Graph priority weight
+    0: 1.0   # Urgent
+    1: 0.9
+    2: 0.8
+    3: 0.7
+    4: 0.6
+    5: 0.5   # Normal
+    6: 0.4
+    7: 0.3
+    8: 0.2
+    9: 0.1
+    10: 0.0  # Low
+
+  # Batch size for fetching task details
+  batch_size: 20
+
+# To Do configuration
+todo:
+  # List mappings (map To Do lists to Life Graph areas)
+  lists:
+    - name: "CEO/Today"
+      list_id: null  # Auto-discover
+      area: "work"
+      domain: "leadership"
+
+    - name: "This Week"
+      list_id: null
+      area: "personal"
+      domain: "weekly_planning"
+
+    - name: "Admin & Errands"
+      list_id: null
+      area: "personal"
+      domain: "errands"
+
+    - name: "Deep Work Ideas"
+      list_id: null
+      area: "personal"
+      domain: "ideas"
+
+  # Importance mapping (To Do: low, normal, high)
+  importance_mapping:
+    high: 0.9
+    normal: 0.5
+    low: 0.1
+
+  # Status mapping
+  status_mapping:
+    "notStarted": "not_started"
+    "inProgress": "in_progress"
+    "completed": "completed"
+    "waitingOnOthers": "blocked"
+    "deferred": "deferred"
+
+# Delta sync configuration
+sync:
+  # Initial sync on startup
+  initial_sync_enabled: true
+
+  # Backstop polling interval (hours)
+  # Best practice: 6-48 hours as backstop for webhook failures
+  backstop_interval_hours: 12
+
+  # Subscription renewal threshold (hours before expiration)
+  renewal_threshold_hours: 12
+
+  # Delta link expiration (days)
+  # Note: Delta links expire after 30 days per Microsoft docs
+  delta_link_expiration_days: 30
+
+  # Batch size for change processing
+  change_batch_size: 100
+
+  # Conflict resolution strategy
+  conflict_resolution: "last_write_wins"  # Options: last_write_wins, graph_wins, lifegraph_wins, manual
+
+# Webhook configuration
+webhooks:
+  # Base URL for webhook endpoints (must be publicly accessible)
+  # Example: https://yourapp.com or https://abc123.ngrok.io
+  base_url: "http://localhost:8000"
+
+  # Webhook endpoints (relative to base_url)
+  endpoints:
+    todo_list: "/api/v1/graph/webhooks/todo_list"
+    todo_task: "/api/v1/graph/webhooks/todo_task"
+    planner_plan: "/api/v1/graph/webhooks/planner_plan"
+    planner_task: "/api/v1/graph/webhooks/planner_task"
+
+  # Subscription expiration (hours)
+  # Max: 4320 (3 days) for user resources, 42 hours for other resources
+  subscription_expiration_hours: 72
+
+  # Validation
+  validation_enabled: true
+
+  # Retry on webhook delivery failure
+  retry_attempts: 3
+
+# Daily brief integration
+daily_brief:
+  # Top N tasks to include
+  top_tasks_count: 5
+
+  # Filter criteria for top tasks
+  top_tasks_filter:
+    max_tier: 1  # Only Tier 0 and Tier 1
+    statuses:
+      - "not_started"
+      - "in_progress"
+    include_overdue: true
+    include_due_today: true
+
+  # Project snapshot settings
+  project_snapshots:
+    enabled: true
+    group_by: "plan"  # Group by plan or area
+    metrics:
+      - "urgent_count"      # Tasks with tier <= 1
+      - "completed_today"   # Completed since yesterday
+      - "due_this_week"     # Due within 7 days
+      - "blocked_count"     # Blocked tasks
+
+  # End-of-day summary
+  end_of_day:
+    enabled: true
+    include_completed: true
+    include_blocked: true
+    include_date_changes: true  # Pushed deadlines
+
+# Mapping to Life Graph
+lifegraph_mapping:
+  # Map Graph tasks to Commitment model
+  commitment:
+    # Source field (Graph) -> Target field (Life Graph)
+    title: "title"
+    description: "description"
+    due_date: "target_date"
+    start_date: "start_date"
+    priority: "priority_score"
+    percent_complete: "completion_percentage"
+
+    # Metadata
+    source_system: "microsoft_graph"
+    source_type_planner: "planner"
+    source_type_todo: "todo"
+
+  # Task rules (from Planner)
+  task_rules:
+    enabled: true
+    enforce_tier_labels: true
+    require_due_date_for_tier_0: true
+    auto_block_on_dependency: true
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  include_api_requests: false
+  include_webhook_payloads: false
+  mask_sensitive_data: true
+
+# Feature flags
+features:
+  planner_sync: true
+  todo_sync: true
+  webhooks: true
+  backstop_polling: true
+  daily_brief: true
+  bidirectional_sync: true  # Push Life Graph changes to Graph
+  business_scenarios: false  # Beta: Business Scenarios API

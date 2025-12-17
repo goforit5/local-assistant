@@ -1,0 +1,108 @@
+# Prompt Configuration: Vendor Matching
+# Service: entity-resolution
+# Version: 1.0.0
+
+name: vendor_matching
+version: 1.0.0
+description: Validate and merge vendor candidates from fuzzy matching
+
+system_prompt: |
+  You are an expert entity resolution system specializing in vendor matching and deduplication.
+  Your task is to determine if two vendor records represent the same entity.
+
+  Matching Criteria:
+  - Name similarity (>90% = high confidence)
+  - Address match (street, city, state)
+  - Tax ID match (100% match if present)
+  - Domain/website match
+
+  Provide a clear yes/no decision with confidence score and reasoning.
+
+user_prompt: |
+  Determine if these vendor records are the same entity:
+
+  **Candidate Vendor** (from document):
+  - Name: {{ candidate_name }}
+  - Address: {{ candidate_address }}
+  - Tax ID: {{ candidate_tax_id }}
+
+  **Existing Vendor** (from database):
+  - Name: {{ existing_name }}
+  - Address: {{ existing_address }}
+  - Tax ID: {{ existing_tax_id }}
+
+  Are these the same vendor?
+
+output_schema:
+  type: object
+  required:
+    - is_match
+    - confidence
+    - reasoning
+    - recommended_action
+  properties:
+    is_match:
+      type: boolean
+      description: "True if same vendor, false otherwise"
+    confidence:
+      type: number
+      description: "Confidence score (0.0-1.0)"
+    reasoning:
+      type: string
+      description: "Detailed explanation for decision"
+    recommended_action:
+      type: string
+      enum: ["merge", "create_new", "manual_review"]
+    conflicts:
+      type: array
+      description: "List of conflicting fields (if any)"
+      items:
+        type: object
+        properties:
+          field:
+            type: string
+          candidate_value:
+            type: string
+          existing_value:
+            type: string
+  additionalProperties: false
+
+variables:
+  - name: candidate_name
+    type: string
+    required: true
+    description: "Vendor name from document"
+  - name: candidate_address
+    type: string
+    required: false
+    description: "Vendor address from document"
+  - name: candidate_tax_id
+    type: string
+    required: false
+    description: "Vendor tax ID from document"
+  - name: existing_name
+    type: string
+    required: true
+    description: "Vendor name from database"
+  - name: existing_address
+    type: string
+    required: false
+    description: "Vendor address from database"
+  - name: existing_tax_id
+    type: string
+    required: false
+    description: "Vendor tax ID from database"
+
+performance:
+  target_latency_ms: 500
+  target_accuracy: 0.95
+  cost_per_call_usd: 0.001
+
+metadata:
+  created_date: 2025-11-06
+  last_modified: 2025-11-06
+  author: AI Dev Team
+  changelog:
+    - version: 1.0.0
+      date: 2025-11-06
+      changes: "Initial version"

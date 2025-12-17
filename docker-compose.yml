@@ -1,0 +1,131 @@
+# Docker Compose configuration for Local AI Assistant
+
+services:
+  # PostgreSQL - Main database
+  postgres:
+    image: postgres:16-alpine
+    container_name: assistant-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: assistant
+      POSTGRES_USER: assistant
+      POSTGRES_PASSWORD: assistant
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Use 5433 externally to avoid conflict
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U assistant"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - assistant-network
+
+  # Redis - Caching and session storage
+  redis:
+    image: redis:7-alpine
+    container_name: assistant-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - ./data/redis:/data
+    ports:
+      - "6380:6379"  # Use 6380 externally to avoid conflict
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - assistant-network
+
+  # ChromaDB - Vector database for embeddings
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: assistant-chroma
+    restart: unless-stopped
+    environment:
+      IS_PERSISTENT: "TRUE"
+      ANONYMIZED_TELEMETRY: "FALSE"
+    volumes:
+      - ./data/chroma:/chroma/chroma
+    ports:
+      - "8002:8000"  # Use 8002 externally to avoid conflict
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - assistant-network
+
+  # Prometheus - Metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: assistant-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./data/prometheus:/prometheus
+    ports:
+      - "9091:9090"  # Use 9091 externally to avoid conflict
+    networks:
+      - assistant-network
+
+  # Grafana - Observability dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: assistant-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_INSTALL_PLUGINS: ""
+    volumes:
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./data/grafana:/var/lib/grafana
+    ports:
+      - "3001:3000"  # Use 3001 externally to avoid conflict
+    depends_on:
+      - prometheus
+    networks:
+      - assistant-network
+
+  # Jaeger - Distributed tracing (optional, disabled by default due to port conflicts)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: assistant-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # HTTP collector
+      - "14250:14250"  # gRPC
+    networks:
+      - assistant-network
+    profiles:
+      - tracing  # Only start with --profile tracing
+
+networks:
+  assistant-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  chroma-data:
+  prometheus-data:
+  grafana-data:

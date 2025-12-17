@@ -1,0 +1,122 @@
+# Prompt Configuration: Validate Vendor
+# Service: validation
+# Version: 1.0.0
+
+name: validate_vendor
+version: 1.0.0
+description: Validate extracted vendor data for completeness and accuracy
+
+system_prompt: |
+  You are an expert data validation system for vendor records.
+
+  Your task is to validate vendor data extracted from documents and flag potential issues.
+
+  Validation Checks:
+  1. Name: Not empty, looks like a real company name
+  2. Tax ID: Format validation (EIN: XX-XXXXXXX for US)
+  3. Address: Complete street, city, state, zip
+  4. Email: Valid email format
+  5. Phone: Valid phone format
+
+  Flag issues like:
+  - Missing required fields
+  - Malformed data (bad phone, bad email)
+  - Suspicious values (test data, placeholder text)
+  - Inconsistencies (state doesn't match zip code)
+
+user_prompt: |
+  Validate this vendor record:
+
+  **Vendor**:
+  - Name: {{ vendor_name }}
+  - Tax ID: {{ tax_id }}
+  - Address: {{ address }}
+  - Email: {{ email }}
+  - Phone: {{ phone }}
+  - Website: {{ website }}
+
+  Is this vendor record valid and complete?
+
+output_schema:
+  type: object
+  required:
+    - is_valid
+    - confidence
+    - issues
+  properties:
+    is_valid:
+      type: boolean
+      description: "True if vendor record is valid, false otherwise"
+    confidence:
+      type: number
+      description: "Confidence score (0.0-1.0)"
+    issues:
+      type: array
+      description: "List of validation issues"
+      items:
+        type: object
+        properties:
+          field:
+            type: string
+            description: "Field name with issue"
+          severity:
+            type: string
+            enum: ["error", "warning", "info"]
+          message:
+            type: string
+            description: "Description of the issue"
+    suggested_fixes:
+      type: array
+      description: "Suggested corrections"
+      items:
+        type: object
+        properties:
+          field:
+            type: string
+          current_value:
+            type: string
+          suggested_value:
+            type: string
+          reasoning:
+            type: string
+  additionalProperties: false
+
+variables:
+  - name: vendor_name
+    type: string
+    required: true
+    description: "Vendor name"
+  - name: tax_id
+    type: string
+    required: false
+    description: "Vendor tax ID / EIN"
+  - name: address
+    type: string
+    required: false
+    description: "Vendor address"
+  - name: email
+    type: string
+    required: false
+    description: "Vendor email"
+  - name: phone
+    type: string
+    required: false
+    description: "Vendor phone"
+  - name: website
+    type: string
+    required: false
+    description: "Vendor website"
+
+performance:
+  target_latency_ms: 300
+  target_accuracy: 0.98
+  cost_per_call_usd: 0.0005
+
+metadata:
+  created_date: 2025-11-06
+  last_modified: 2025-11-06
+  author: AI Dev Team
+  changelog:
+    - version: 1.0.0
+      date: 2025-11-06
+      changes: "Initial version"

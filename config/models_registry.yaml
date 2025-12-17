@@ -1,0 +1,104 @@
+# Model Registry - All Available Models
+# Single source of truth for model capabilities, pricing, and defaults
+# Version: 1.0.0
+# Last Updated: 2025-10-26
+
+vision_models:
+  gpt-4o:
+    provider: openai
+    model_id: gpt-4o
+    context_window: 128000
+    max_output_tokens: 32768
+    supports_vision: true
+    cost:
+      input_per_1m: 2.50    # USD per 1M input tokens
+      output_per_1m: 10.00  # USD per 1M output tokens
+      image_per_1m: 2.50    # USD per 1M image tokens
+    defaults:
+      max_tokens: 32768
+      temperature: 0.0
+      detail: high         # OpenAI-specific: high-resolution image analysis
+
+  claude-sonnet-4-5:
+    provider: anthropic
+    model_id: claude-sonnet-4-5-20250929
+    context_window: 200000
+    max_output_tokens: 16384
+    supports_vision: true
+    cost:
+      input_per_1m: 3.00
+      output_per_1m: 15.00
+    defaults:
+      max_tokens: 16384
+      temperature: 0.0
+      timeout: 1800
+
+  gemini-2-5-flash:
+    provider: google
+    model_id: gemini-2.5-flash
+    context_window: 1000000
+    max_output_tokens: 32768
+    supports_vision: true
+    cost:
+      input_per_1m: 0.075  # Cheapest vision model
+      output_per_1m: 0.30
+    defaults:
+      max_tokens: 32768
+      temperature: 0.0
+      thinking_budget: 0   # Fast mode, no extended thinking
+
+reasoning_models:
+  o4-mini:
+    provider: openai
+    model_id: o4-mini
+    context_window: 128000
+    max_output_tokens: 65536
+    supports_reasoning: true
+    cost:
+      input_per_1m: 1.50
+      output_per_1m: 6.00
+    defaults:
+      max_tokens: 65536
+      temperature: 1.0     # Reasoning models use temperature 1.0
+
+  gpt-5:
+    provider: openai
+    model_id: gpt-5
+    context_window: 128000
+    max_output_tokens: 65536
+    supports_reasoning: true
+    cost:
+      input_per_1m: 2.00
+      output_per_1m: 8.00
+    defaults:
+      max_tokens: 65536
+      temperature: 1.0
+
+  claude-opus-4-1:
+    provider: anthropic
+    model_id: claude-opus-4-1-20250805
+    context_window: 200000
+    max_output_tokens: 32768
+    supports_reasoning: true
+    cost:
+      input_per_1m: 15.00  # Most expensive, best quality
+      output_per_1m: 75.00
+    defaults:
+      max_tokens: 32768
+      temperature: 1.0
+      timeout: 1800
+      thinking_budget: null  # Can be overridden per step
+
+  gemini-2-5-pro:
+    provider: google
+    model_id: gemini-2.5-pro
+    context_window: 2000000  # Largest context window
+    max_output_tokens: 32768
+    supports_reasoning: true
+    cost:
+      input_per_1m: 0.25
+      output_per_1m: 1.00
+    defaults:
+      max_tokens: 32768
+      temperature: 1.0
+      thinking_budget: -1  # Dynamic thinking mode

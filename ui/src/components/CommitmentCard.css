@@ -1,0 +1,153 @@
+/* CommitmentCard Styles */
+
+.commitment-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: box-shadow 0.2s;
+  border-left: 4px solid transparent;
+}
+
+.commitment-card.priority-high {
+  border-left-color: #d32f2f;
+}
+
+.commitment-card.priority-medium {
+  border-left-color: #f57c00;
+}
+
+.commitment-card.priority-low {
+  border-left-color: #388e3c;
+}
+
+.commitment-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.priority-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.commitment-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #212121;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.commitment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.meta-label {
+  font-weight: 600;
+  color: #757575;
+}
+
+.meta-value {
+  color: #424242;
+  font-weight: 500;
+}
+
+.meta-value.state-active {
+  color: #2196f3;
+  font-weight: 600;
+}
+
+.meta-value.state-fulfilled {
+  color: #388e3c;
+  font-weight: 600;
+}
+
+.meta-value.state-canceled {
+  color: #757575;
+  font-weight: 600;
+}
+
+.due-date {
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+.commitment-reason {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #fff9c4;
+  border-left: 3px solid #fbc02d;
+  border-radius: 4px;
+}
+
+.reason-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f57f17;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.reason-text {
+  margin: 0;
+  font-size: 14px;
+  color: #424242;
+  line-height: 1.5;
+}
+
+.fulfill-button {
+  width: 100%;
+  padding: 10px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.fulfill-button:hover {
+  background-color: #388e3c;
+}
+
+.fulfill-button:disabled,
+.fulfill-button.fulfilling {
+  background-color: #a5d6a7;
+  cursor: not-allowed;
+}
+
+.fulfilled-badge {
+  width: 100%;
+  padding: 10px 16px;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 2px solid #4caf50;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}

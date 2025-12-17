@@ -1,0 +1,64 @@
+# Circuit Breaker Configuration
+# Fault tolerance settings for AI provider calls
+# Version: 1.0.0
+
+# Global defaults
+defaults:
+  failure_threshold: 5      # Number of failures to open circuit
+  failure_window: 60        # Time window in seconds for counting failures
+  timeout: 30               # Seconds before attempting HALF_OPEN
+  half_open_max_calls: 1    # Test requests allowed in HALF_OPEN state
+  success_threshold: 1      # Successes needed to close from HALF_OPEN
+  redis_ttl: 300           # State TTL in Redis (5 minutes)
+
+# Redis configuration
+redis:
+  url: "redis://localhost:6379"
+  key_prefix: "circuit"
+  db: 0
+  max_connections: 10
+
+# Provider-specific overrides
+# Higher thresholds for more reliable providers
+providers:
+  anthropic:
+    failure_threshold: 5
+    failure_window: 60
+    timeout: 30
+    # Claude is generally reliable, standard settings
+
+  openai:
+    failure_threshold: 5
+    failure_window: 60
+    timeout: 30
+    # GPT models are reliable, standard settings
+
+  google:
+    failure_threshold: 7     # More lenient for Google
+    failure_window: 90       # Longer window
+    timeout: 45              # Longer timeout
+    # Gemini sometimes has regional latency issues
+
+# State machine transitions:
+#
+# CLOSED (normal operation):
+#   - All requests allowed
+#   - Track failures within window
+#   - Transition to OPEN after N failures in window
+#
+# OPEN (blocking requests):
+#   - All requests blocked
+#   - Return CircuitBreakerError immediately
+#   - Wait for timeout period
+#   - Transition to HALF_OPEN after timeout
+#
+# HALF_OPEN (testing recovery):
+#   - Allow limited test requests (half_open_max_calls)
+#   - If test succeeds -> CLOSED
+#   - If test fails -> OPEN (reset timeout)
+#
+# Example failure scenarios:
+#   1. API key invalid: Opens after 5 quick failures
+#   2. Rate limit exceeded: Opens after 5 failures in 60s
+#   3. Network timeout: Each timeout counts as failure
+#   4. Service degradation: Gradual failures trigger open

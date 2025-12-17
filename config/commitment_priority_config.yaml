@@ -1,0 +1,93 @@
+# Commitment Priority Calculation Configuration
+# Version: 1.0.0
+# Last Updated: 2025-11-06
+# Algorithm: Weighted sum of factors (0-100 scale)
+
+priority_weights:
+  time_pressure: 0.30      # 30% weight
+  severity: 0.25           # 25% weight
+  amount: 0.15             # 15% weight
+  effort: 0.15             # 15% weight
+  dependency: 0.10         # 10% weight
+  user_preference: 0.05    # 5% weight
+
+# Time Pressure Factor (days until due)
+time_pressure:
+  scoring:
+    - days_remaining: 0      # Overdue
+      score: 100
+    - days_remaining: 1      # Due today/tomorrow
+      score: 95
+    - days_remaining: 3      # Due in 3 days
+      score: 85
+    - days_remaining: 7      # Due in 1 week
+      score: 70
+    - days_remaining: 14     # Due in 2 weeks
+      score: 50
+    - days_remaining: 30     # Due in 1 month
+      score: 30
+    - days_remaining: 90     # Due in 3 months
+      score: 10
+
+# Severity Factor (domain-based risk)
+severity:
+  domains:
+    Legal: 10                # Highest risk (lawsuits, compliance)
+    Finance: 8               # High risk (late fees, credit)
+    Health: 9                # Very high risk (medical urgency)
+    Compliance: 10           # Regulatory requirements
+    Admin: 5                 # Medium risk
+    Personal: 3              # Low risk
+
+# Amount Factor (logarithmic scale)
+amount:
+  thresholds:
+    - min: 0
+      max: 100
+      score: 10
+    - min: 100
+      max: 1000
+      score: 30
+    - min: 1000
+      max: 10000
+      score: 60
+    - min: 10000
+      max: 100000
+      score: 90
+    - min: 100000
+      max: null              # $100k+
+      score: 100
+
+# Effort Factor (estimated hours)
+effort:
+  scoring:
+    - hours: 0.25            # < 15 minutes
+      score: 10
+    - hours: 1               # < 1 hour
+      score: 30
+    - hours: 4               # Half day
+      score: 60
+    - hours: 8               # Full day
+      score: 80
+    - hours: 16              # 2+ days
+      score: 90
+
+# Dependency Factor
+dependency:
+  has_blockers: 50           # If blocked by other commitments
+  blocks_others: 80          # If blocking other commitments
+  no_dependencies: 0         # Independent task
+
+# User Preference
+user_preference:
+  flagged_important: 20      # User manually marked as important
+  default: 0
+
+# Reason String Template
+reason_template: |
+  {time_reason}{severity_reason}{amount_reason}
+
+  # Examples:
+  # "Due in 2 days, legal requirement, $12,419.83"
+  # "Overdue, high financial risk"
+  # "Due in 1 week, blocking 3 other tasks"

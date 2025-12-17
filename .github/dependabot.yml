@@ -1,0 +1,107 @@
+version: 2
+
+updates:
+  # Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "andrew"
+    assignees:
+      - "andrew"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    versioning-strategy: increase
+    ignore:
+      # Ignore major version updates for stable dependencies
+      - dependency-name: "anthropic"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "openai"
+        update-types: ["version-update:semver-major"]
+    groups:
+      ai-providers:
+        patterns:
+          - "anthropic"
+          - "openai"
+          - "google-generativeai"
+      fastapi:
+        patterns:
+          - "fastapi"
+          - "uvicorn"
+          - "pydantic"
+          - "pydantic-settings"
+      database:
+        patterns:
+          - "sqlalchemy"
+          - "asyncpg"
+          - "alembic"
+          - "redis"
+      observability:
+        patterns:
+          - "opentelemetry-*"
+          - "prometheus-client"
+          - "structlog"
+      testing:
+        patterns:
+          - "pytest"
+          - "pytest-*"
+          - "coverage"
+      linting:
+        patterns:
+          - "ruff"
+          - "mypy"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "andrew"
+    assignees:
+      - "andrew"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "docker"
+      include: "scope"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "andrew"
+    assignees:
+      - "andrew"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      actions:
+        patterns:
+          - "actions/*"
+          - "github/*"

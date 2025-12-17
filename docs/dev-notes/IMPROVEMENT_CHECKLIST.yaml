@@ -1,0 +1,767 @@
+# 🦄 Unicorn-Grade Improvement Checklist
+# Version: 1.0.0
+# Date: 2025-11-10
+# Status: Action Plan
+# DRY Principle: Don't Repeat Yourself - Configuration over Code
+
+metadata:
+  project: Local AI Assistant
+  current_status: 90% complete
+  target_status: 100% production-ready unicorn-grade
+  estimated_effort: 2-3 weeks
+  priority_order: [critical, high, medium, low]
+
+# ============================================================================
+# PHASE 1: CRITICAL (Must-Fix Before Production)
+# ============================================================================
+
+phase_1_critical:
+
+  # --------------------------------------------------------------------------
+  # 1.1 Security Hardening
+  # --------------------------------------------------------------------------
+  security:
+    priority: critical
+    estimated_hours: 16
+
+    tasks:
+      - id: SEC-001
+        title: Implement JWT Authentication
+        status: todo
+        details:
+          - Create auth middleware for FastAPI
+          - Add JWT token generation/validation
+          - Store user sessions in Redis
+          - Add /api/auth/login and /api/auth/logout endpoints
+          - Update all API routes to require authentication
+        files_to_create:
+          - api/auth/__init__.py
+          - api/auth/jwt.py
+          - api/auth/middleware.py
+          - api/auth/models.py
+        files_to_modify:
+          - api/main.py (add auth middleware)
+          - api/routes/*.py (add Depends(get_current_user))
+        config_changes:
+          - Add JWT_SECRET_KEY to .env
+          - Add JWT_ALGORITHM to .env (default: HS256)
+          - Add JWT_EXPIRATION_HOURS to .env (default: 24)
+        dry_principle:
+          avoid: "Hardcoding auth logic in each route"
+          solution: "Single middleware with dependency injection"
+
+      - id: SEC-002
+        title: Add Rate Limiting
+        status: todo
+        details:
+          - Install slowapi (FastAPI rate limiting)
+          - Configure per-endpoint rate limits
+          - Store rate limit state in Redis
+          - Add rate limit headers to responses
+          - Create rate limit exceeded error handler
+        files_to_create:
+          - api/middleware/rate_limit.py
+        files_to_modify:
+          - api/main.py (add rate limit middleware)
+          - pyproject.toml (add slowapi dependency)
+        config_changes:
+          file: config/rate_limits.yaml
+          content:
+            global:
+              requests_per_minute: 100
+              requests_per_hour: 1000
+            endpoints:
+              /api/chat: {rpm: 20, rph: 200}
+              /api/vision/extract: {rpm: 10, rph: 50}
+              /api/reasoning/solve: {rpm: 5, rph: 20}
+        dry_principle:
+          avoid: "Hardcoded rate limits in decorator arguments"
+          solution: "YAML config with endpoint-specific limits"
+
+      - id: SEC-003
+        title: Secrets Management
+        status: todo
+        details:
+          - Move API keys from .env to secrets manager
+          - Support AWS Secrets Manager
+          - Support HashiCorp Vault
+          - Support environment variable fallback
+          - Add secrets rotation support
+        files_to_create:
+          - lib/shared/local_assistant_shared/secrets/__init__.py
+          - lib/shared/local_assistant_shared/secrets/manager.py
+          - lib/shared/local_assistant_shared/secrets/providers/aws.py
+          - lib/shared/local_assistant_shared/secrets/providers/vault.py
+          - lib/shared/local_assistant_shared/secrets/providers/env.py
+        config_changes:
+          file: config/secrets.yaml
+          content:
+            provider: env  # env, aws_secrets, vault
+            aws_secrets:
+              region: us-west-2
+              secret_name: local-assistant/api-keys
+            vault:
+              url: http://localhost:8200
+              token: ${VAULT_TOKEN}
+              path: secret/local-assistant
+        dry_principle:
+          avoid: "Multiple places reading environment variables"
+          solution: "Single secrets manager abstraction"
+
+      - id: SEC-004
+        title: File Upload Validation
+        status: todo
+        details:
+          - Add magic bytes validation (not just extension)
+          - Implement virus scanning (ClamAV optional)
+          - Add file size limits per endpoint
+          - Validate PDF structure before processing
+          - Add content-type verification
+        files_to_create:
+          - services/validation/__init__.py
+          - services/validation/file_validator.py
+          - services/validation/mime_detector.py
+        files_to_modify:
+          - api/routes/vision.py (add validation)
+          - api/routes/documents.py (add validation)
+        config_changes:
+          file: config/file_validation.yaml
+          content:
+            max_file_size_mb: 25
+            allowed_mime_types:
+              - application/pdf
+              - image/png
+              - image/jpeg
+            magic_bytes_validation: true
+            virus_scan_enabled: false
+        dry_principle:
+          avoid: "Duplicate validation logic in multiple routes"
+          solution: "Reusable FileValidator service"
+
+  # --------------------------------------------------------------------------
+  # 1.2 Testing Foundation
+  # --------------------------------------------------------------------------
+  testing:
+    priority: critical
+    estimated_hours: 24
+
+    tasks:
+      - id: TEST-001
+        title: Complete Unit Tests for Services
+        status: todo
+        coverage_target: 80%
+        details:
+          - Write tests for VisionProcessor
+          - Write tests for DocumentProcessingPipeline
+          - Write tests for EntityResolver
+          - Write tests for CommitmentManager
+          - Write tests for ChatRouter
+        files_to_create:
+          - tests/unit/services/test_vision_processor.py
+          - tests/unit/services/test_pipeline.py
+          - tests/unit/services/test_entity_resolver.py
+          - tests/unit/services/test_commitment_manager.py
+        test_patterns:
+          - Use pytest fixtures for common setup
+          - Mock external API calls (Anthropic, OpenAI, Google)
+          - Use freezegun for time-based tests
+          - Use faker for test data generation
+        dry_principle:
+          avoid: "Repeating test setup in each test file"
+          solution: "Centralized fixtures in conftest.py"
+
+      - id: TEST-002
+        title: Integration Tests for API Endpoints
+        status: todo
+        coverage_target: 90%
+        details:
+          - Test POST /api/documents/upload end-to-end
+          - Test vendor resolution flow
+          - Test commitment creation flow
+          - Test document linking
+          - Test interaction logging
+        files_to_create:
+          - tests/integration/test_document_upload_flow.py
+          - tests/integration/test_vendor_resolution_flow.py
+          - tests/integration/test_commitment_flow.py
+        test_database:
+          - Use pytest-postgresql for test database
+          - Run migrations before each test
+          - Clean database after each test
+        dry_principle:
+          avoid: "Manual database setup in each test"
+          solution: "pytest fixtures for DB lifecycle"
+
+      - id: TEST-003
+        title: E2E Tests with Real API Calls
+        status: todo
+        details:
+          - Create smoke tests for production readiness
+          - Test actual Anthropic/OpenAI/Google API calls
+          - Measure real costs and latencies
+          - Validate responses match expected format
+        files_to_create:
+          - tests/e2e/test_production_smoke.py
+          - tests/e2e/test_api_integration.py
+        config_changes:
+          file: tests/e2e/config.yaml
+          content:
+            run_real_api_calls: false  # Set to true for CI/CD
+            max_cost_per_test: 0.10
+            timeout_seconds: 60
+        dry_principle:
+          avoid: "Hardcoded API keys in test files"
+          solution: "Load from environment or secrets manager"
+
+  # --------------------------------------------------------------------------
+  # 1.3 Error Handling & Resilience
+  # --------------------------------------------------------------------------
+  error_handling:
+    priority: critical
+    estimated_hours: 12
+
+    tasks:
+      - id: ERR-001
+        title: Implement Circuit Breaker Pattern
+        status: todo
+        details:
+          - Add circuit breaker for external API calls
+          - Configure failure thresholds per provider
+          - Add automatic recovery logic
+          - Expose circuit breaker state in metrics
+        files_to_create:
+          - lib/shared/local_assistant_shared/resilience/__init__.py
+          - lib/shared/local_assistant_shared/resilience/circuit_breaker.py
+        files_to_modify:
+          - providers/base.py (wrap API calls)
+          - providers/anthropic_provider.py
+          - providers/openai_provider.py
+          - providers/google_provider.py
+        config_changes:
+          file: config/resilience.yaml
+          content:
+            circuit_breaker:
+              failure_threshold: 5
+              timeout_seconds: 60
+              half_open_max_calls: 3
+            per_provider:
+              anthropic: {threshold: 5, timeout: 60}
+              openai: {threshold: 5, timeout: 60}
+              google: {threshold: 3, timeout: 30}
+        dry_principle:
+          avoid: "Duplicate circuit breaker logic per provider"
+          solution: "Single reusable CircuitBreaker class"
+
+      - id: ERR-002
+        title: Add Retry Logic with Exponential Backoff
+        status: todo
+        details:
+          - Use tenacity library (already installed)
+          - Configure per-error-type retry strategies
+          - Add jitter to prevent thundering herd
+          - Log retry attempts with context
+        files_to_modify:
+          - providers/base.py (add retry decorator)
+          - services/vision/processor.py
+          - services/document_intelligence/pipeline.py
+        config_changes:
+          file: config/retry.yaml
+          content:
+            default:
+              max_attempts: 3
+              initial_wait_seconds: 1
+              max_wait_seconds: 10
+              exponential_base: 2
+              jitter: true
+            per_error_type:
+              rate_limit: {max_attempts: 5, initial_wait: 30}
+              timeout: {max_attempts: 3, initial_wait: 2}
+              connection: {max_attempts: 4, initial_wait: 1}
+        dry_principle:
+          avoid: "Hardcoded retry logic in each API call"
+          solution: "Configurable retry decorator"
+
+      - id: ERR-003
+        title: Standardize Error Responses
+        status: todo
+        details:
+          - Create ErrorResponse model (Pydantic)
+          - Add error codes for all failure types
+          - Include request_id in all errors
+          - Add helpful error messages with suggested fixes
+        files_to_create:
+          - api/models/errors.py
+        files_to_modify:
+          - api/main.py (global error handlers)
+          - api/routes/*.py (raise standardized errors)
+        error_format:
+          structure:
+            error_code: "ERR_VISION_001"
+            message: "Document extraction failed"
+            details: "GPT-4o API timeout after 60s"
+            request_id: "uuid"
+            timestamp: "ISO8601"
+            suggested_action: "Retry with smaller file or use OCR fallback"
+        dry_principle:
+          avoid: "Different error formats per endpoint"
+          solution: "Single ErrorResponse model"
+
+# ============================================================================
+# PHASE 2: HIGH PRIORITY (Polish & Performance)
+# ============================================================================
+
+phase_2_high:
+
+  # --------------------------------------------------------------------------
+  # 2.1 Performance Optimization
+  # --------------------------------------------------------------------------
+  performance:
+    priority: high
+    estimated_hours: 20
+
+    tasks:
+      - id: PERF-001
+        title: Implement Redis Caching Layer
+        status: todo
+        details:
+          - Cache vendor lookups by name/tax_id
+          - Cache document extraction results by SHA-256
+          - Cache frequently accessed commitments
+          - Add cache invalidation on updates
+          - Configure TTL per cache type
+        files_to_create:
+          - memory/cache.py
+          - memory/cache_keys.py
+        files_to_modify:
+          - services/document_intelligence/entity_resolver.py
+          - services/document_intelligence/pipeline.py
+          - api/routes/vendors.py
+        config_changes:
+          file: config/cache.yaml
+          content:
+            enabled: true
+            redis_url: ${REDIS_URL}
+            default_ttl_seconds: 3600
+            cache_types:
+              vendor_lookup: {ttl: 86400}  # 24 hours
+              document_extraction: {ttl: 604800}  # 7 days
+              commitment_list: {ttl: 300}  # 5 minutes
+        dry_principle:
+          avoid: "Manual cache key construction everywhere"
+          solution: "Centralized cache key builder"
+
+      - id: PERF-002
+        title: Database Query Optimization
+        status: todo
+        details:
+          - Add query profiling to identify slow queries
+          - Add covering indexes for common queries
+          - Optimize N+1 queries with joinedload
+          - Add query result caching
+          - Configure connection pool size
+        files_to_modify:
+          - memory/models.py (add eager loading hints)
+          - api/routes/vendors.py (optimize queries)
+          - api/routes/commitments.py (optimize queries)
+        config_changes:
+          file: config/database.yaml
+          content:
+            pool_size: 10
+            max_overflow: 20
+            pool_timeout: 30
+            pool_recycle: 3600
+            echo: false  # Set to true for query logging
+            slow_query_threshold_ms: 100
+        indexes_to_add:
+          - parties: CREATE INDEX idx_parties_name_lower ON parties(LOWER(name))
+          - commitments: CREATE INDEX idx_commitments_priority_due ON commitments(priority DESC, due_date)
+        dry_principle:
+          avoid: "Duplicate query patterns in multiple routes"
+          solution: "Repository pattern with optimized queries"
+
+      - id: PERF-003
+        title: Async Optimization Review
+        status: todo
+        details:
+          - Profile async operations with py-spy
+          - Identify blocking calls in async context
+          - Convert synchronous operations to async
+          - Add async connection pools
+          - Optimize asyncio.gather usage
+        files_to_review:
+          - services/vision/processor.py
+          - services/document_intelligence/pipeline.py
+          - providers/*.py
+        dry_principle:
+          avoid: "Mixing sync and async operations inconsistently"
+          solution: "Pure async from API → database"
+
+      - id: PERF-004
+        title: Add Response Compression
+        status: todo
+        details:
+          - Enable gzip compression for API responses
+          - Configure compression thresholds
+          - Add compression headers
+        files_to_modify:
+          - api/main.py (add compression middleware)
+        config:
+          minimum_size_bytes: 1024
+          compression_level: 6
+
+  # --------------------------------------------------------------------------
+  # 2.2 Configuration DRY Improvements
+  # --------------------------------------------------------------------------
+  config_dry:
+    priority: high
+    estimated_hours: 16
+
+    tasks:
+      - id: DRY-001
+        title: Centralize All Configuration Loading
+        status: todo
+        details:
+          - Create single ConfigLoader class
+          - Load all YAML configs on startup
+          - Validate configs with Pydantic models
+          - Cache parsed configs in memory
+          - Add config hot-reload support
+        files_to_create:
+          - lib/shared/local_assistant_shared/config/loader.py (already exists, enhance)
+          - lib/shared/local_assistant_shared/config/validator.py
+          - lib/shared/local_assistant_shared/config/schema.py
+        files_to_modify:
+          - api/main.py (load all configs on startup)
+        dry_principle:
+          avoid: "Each service loading its own YAML files"
+          solution: "Single config loader with dependency injection"
+
+      - id: DRY-002
+        title: Eliminate Hardcoded Strings
+        status: todo
+        details:
+          - Create constants.py for all magic strings
+          - Move all status values to enums
+          - Move all error messages to message catalog
+          - Move all model names to config
+        files_to_create:
+          - lib/shared/local_assistant_shared/constants.py
+          - lib/shared/local_assistant_shared/enums.py
+          - lib/shared/local_assistant_shared/messages.yaml
+        examples:
+          before: 'status = "processing"'
+          after: 'status = SignalStatus.PROCESSING'
+        dry_principle:
+          avoid: "String literals scattered throughout code"
+          solution: "Centralized constants and enums"
+
+      - id: DRY-003
+        title: Unify Provider Configuration
+        status: todo
+        details:
+          - Single provider config format for all providers
+          - Load provider settings from models_registry.yaml
+          - Remove provider-specific initialization code
+          - Use factory pattern for provider creation
+        files_to_create:
+          - providers/factory.py
+        files_to_modify:
+          - api/main.py (use provider factory)
+          - providers/base.py (add from_config method)
+        dry_principle:
+          avoid: "Different initialization logic per provider"
+          solution: "Factory pattern with unified config"
+
+  # --------------------------------------------------------------------------
+  # 2.3 API Improvements
+  # --------------------------------------------------------------------------
+  api_improvements:
+    priority: high
+    estimated_hours: 12
+
+    tasks:
+      - id: API-001
+        title: Add API Versioning
+        status: todo
+        details:
+          - Version all endpoints with /v1/ prefix
+          - Support multiple API versions simultaneously
+          - Add deprecation warnings to old versions
+          - Document version migration guide
+        files_to_modify:
+          - api/main.py (add /api/v1 router)
+          - api/routes/*.py (move to versioned routes)
+        example:
+          old: /api/documents/upload
+          new: /api/v1/documents/upload
+        dry_principle:
+          avoid: "Breaking API changes without versioning"
+          solution: "Semantic versioning with backward compatibility"
+
+      - id: API-002
+        title: Add Request/Response Schemas
+        status: todo
+        details:
+          - Create Pydantic models for all requests
+          - Create Pydantic models for all responses
+          - Add OpenAPI examples to all schemas
+          - Validate all inputs with Pydantic
+        files_to_create:
+          - api/schemas/*.py (expand existing)
+        dry_principle:
+          avoid: "Unvalidated dictionaries as inputs"
+          solution: "Type-safe Pydantic models"
+
+      - id: API-003
+        title: Add Pagination to List Endpoints
+        status: todo
+        details:
+          - Add limit/offset pagination
+          - Add cursor-based pagination option
+          - Return total count in responses
+          - Add pagination metadata
+        files_to_modify:
+          - api/routes/vendors.py
+          - api/routes/commitments.py
+          - api/routes/documents.py
+        response_format:
+          data: [items]
+          pagination:
+            total: 100
+            limit: 20
+            offset: 0
+            has_more: true
+        dry_principle:
+          avoid: "Custom pagination logic per endpoint"
+          solution: "Reusable pagination utility"
+
+# ============================================================================
+# PHASE 3: MEDIUM PRIORITY (Features & Polish)
+# ============================================================================
+
+phase_3_medium:
+
+  # --------------------------------------------------------------------------
+  # 3.1 Deployment Automation
+  # --------------------------------------------------------------------------
+  deployment:
+    priority: medium
+    estimated_hours: 16
+
+    tasks:
+      - id: DEPLOY-001
+        title: Create Kubernetes Manifests
+        status: todo
+        details:
+          - Create Deployment manifests for API
+          - Create Service manifests
+          - Create Ingress for routing
+          - Add ConfigMaps for configs
+          - Add Secrets for API keys
+          - Add HorizontalPodAutoscaler
+        files_to_create:
+          - k8s/api-deployment.yaml
+          - k8s/api-service.yaml
+          - k8s/ingress.yaml
+          - k8s/configmap.yaml
+          - k8s/secrets.yaml
+          - k8s/hpa.yaml
+        dry_principle:
+          avoid: "Environment-specific configurations in code"
+          solution: "ConfigMaps and env-specific overlays"
+
+      - id: DEPLOY-002
+        title: Setup CI/CD Pipeline
+        status: todo
+        details:
+          - Create GitHub Actions workflows
+          - Add lint/format checks (ruff)
+          - Add test runs with coverage
+          - Add Docker image build
+          - Add deployment to staging/production
+          - Add automated rollback on failure
+        files_to_create:
+          - .github/workflows/ci.yaml
+          - .github/workflows/deploy.yaml
+          - .github/workflows/test.yaml
+        dry_principle:
+          avoid: "Manual deployment steps"
+          solution: "Fully automated CI/CD"
+
+      - id: DEPLOY-003
+        title: Add Health Check Endpoints
+        status: todo
+        details:
+          - Enhance /api/health with detailed checks
+          - Add /api/health/live (liveness probe)
+          - Add /api/health/ready (readiness probe)
+          - Check database connectivity
+          - Check Redis connectivity
+          - Check external API reachability
+        files_to_modify:
+          - api/routes/health.py
+        response_format:
+          status: healthy
+          checks:
+            database: {status: up, latency_ms: 5}
+            redis: {status: up, latency_ms: 1}
+            anthropic_api: {status: up, latency_ms: 200}
+
+  # --------------------------------------------------------------------------
+  # 3.2 Documentation
+  # --------------------------------------------------------------------------
+  documentation:
+    priority: medium
+    estimated_hours: 12
+
+    tasks:
+      - id: DOC-001
+        title: Create Architecture Decision Records
+        status: todo
+        details:
+          - Document all major design decisions
+          - Explain why alternatives were rejected
+          - Add context and consequences
+        files_to_create:
+          - docs/adr/001-provider-abstraction.md
+          - docs/adr/002-content-addressable-storage.md
+          - docs/adr/003-priority-algorithm.md
+          - docs/adr/004-fuzzy-matching-strategy.md
+        template:
+          title: "ADR-XXX: Title"
+          status: "Accepted"
+          context: "What is the issue?"
+          decision: "What did we decide?"
+          consequences: "What are the trade-offs?"
+
+      - id: DOC-002
+        title: API Reference Documentation
+        status: todo
+        details:
+          - Auto-generate from OpenAPI schema
+          - Add code examples for all endpoints
+          - Add authentication examples
+          - Add error handling examples
+        files_to_create:
+          - docs/api/README.md
+          - docs/api/authentication.md
+          - docs/api/endpoints/*.md
+
+      - id: DOC-003
+        title: Deployment Runbook
+        status: todo
+        details:
+          - Step-by-step production deployment guide
+          - Configuration checklist
+          - Troubleshooting section
+          - Rollback procedures
+        files_to_create:
+          - docs/deployment/RUNBOOK.md
+          - docs/deployment/TROUBLESHOOTING.md
+
+  # --------------------------------------------------------------------------
+  # 3.3 Monitoring Enhancements
+  # --------------------------------------------------------------------------
+  monitoring:
+    priority: medium
+    estimated_hours: 8
+
+    tasks:
+      - id: MON-001
+        title: Add Custom Grafana Dashboards
+        status: todo
+        details:
+          - Create dashboard for API performance
+          - Create dashboard for cost tracking
+          - Create dashboard for error rates
+          - Add alerting rules
+        files_to_create:
+          - config/grafana/dashboards/api_performance.json
+          - config/grafana/dashboards/cost_tracking.json
+          - config/grafana/dashboards/errors.json
+
+      - id: MON-002
+        title: Add Structured Logging
+        status: todo
+        details:
+          - Ensure all logs are JSON formatted
+          - Add trace_id to all logs
+          - Add context to all errors
+          - Configure log levels per module
+        files_to_modify:
+          - observability/logs.py
+
+# ============================================================================
+# PHASE 4: LOW PRIORITY (Nice-to-Have)
+# ============================================================================
+
+phase_4_low:
+
+  # --------------------------------------------------------------------------
+  # 4.1 Advanced Features
+  # --------------------------------------------------------------------------
+  features:
+    priority: low
+    estimated_hours: 24
+
+    tasks:
+      - id: FEAT-001
+        title: Batch Processing Queue
+        status: future
+        details:
+          - Add Celery for async task processing
+          - Create queue for document batch processing
+          - Add progress tracking
+          - Add result callbacks
+
+      - id: FEAT-002
+        title: Webhook Support
+        status: future
+        details:
+          - Add webhook endpoints for external integrations
+          - Support webhook signatures for security
+          - Add retry logic for failed webhooks
+
+      - id: FEAT-003
+        title: Multi-tenant Support
+        status: future
+        details:
+          - Add tenant_id to all tables
+          - Implement row-level security
+          - Add tenant-specific rate limits
+
+# ============================================================================
+# MEASUREMENT & VALIDATION
+# ============================================================================
+
+success_metrics:
+  code_quality:
+    test_coverage_target: 85%
+    type_coverage_target: 90%
+    complexity_max: 10  # Maximum cyclomatic complexity
+
+  performance:
+    api_p95_latency_ms: 200
+    api_p99_latency_ms: 500
+    database_query_p95_ms: 50
+
+  security:
+    vulnerabilities_allowed: 0
+    secrets_in_code: 0
+    rate_limit_coverage: 100%
+
+  deployment:
+    deployment_time_minutes: 5
+    rollback_time_minutes: 2
+    zero_downtime: true
+
+validation_checklist:
+  before_production:
+    - All critical tasks completed
+    - Test coverage >85%
+    - Security audit passed
+    - Load testing completed (100 concurrent users)
+    - Disaster recovery tested
+    - Documentation complete
+    - Monitoring dashboards configured
+    - Alerting rules tested

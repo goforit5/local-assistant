@@ -1,0 +1,52 @@
+# Document Storage Configuration
+# Version: 1.0.0
+# Last Updated: 2025-11-06
+
+# Active backend
+active_backend: local        # "local" | "s3" | "gcs"
+
+# Local Filesystem Backend (MVP)
+local:
+  base_path: ./data/documents
+  directory_structure: flat  # "flat" | "nested"  (flat = all in one dir)
+  filename_format: "{sha256}.{ext}"
+  max_file_size_mb: 50
+  allowed_mime_types:
+    - application/pdf
+    - image/png
+    - image/jpeg
+    - image/tiff
+  permissions:
+    mode: 0644               # Read/write for owner, read for group/others
+
+# AWS S3 Backend (Future)
+s3:
+  bucket: local-assistant-documents
+  region: us-east-1
+  prefix: documents/         # S3 key prefix
+  storage_class: STANDARD    # "STANDARD" | "INTELLIGENT_TIERING" | "GLACIER"
+  encryption: AES256
+  versioning: true           # Enable S3 versioning
+  lifecycle_rules:
+    transition_to_glacier_days: 90
+    expire_days: null        # null = keep forever
+
+# Google Cloud Storage Backend (Future)
+gcs:
+  bucket: local-assistant-documents
+  prefix: documents/
+  storage_class: STANDARD
+  versioning: true
+
+# Content Addressable Storage
+content_addressable:
+  enabled: true
+  hash_algorithm: sha256     # "sha256" | "blake2b"
+  dedupe_check: true         # Check if file exists before storing
+
+# Cleanup
+cleanup:
+  orphaned_files:
+    enabled: false           # Delete files not referenced in DB
+    dry_run: true
+    schedule: "0 2 * * 0"    # Weekly at 2 AM Sunday (cron)

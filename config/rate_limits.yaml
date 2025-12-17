@@ -1,0 +1,64 @@
+# Rate Limiting Configuration
+# Redis-backed distributed rate limiting for FastAPI endpoints
+
+# Default rate limits for all endpoints
+default:
+  requests_per_minute: 100
+  requests_per_hour: 1000
+
+# Custom limits for specific endpoints
+endpoints:
+  # Vision API - resource intensive, stricter limits
+  /api/vision:
+    requests_per_minute: 10
+    requests_per_hour: 100
+
+  # Computer use API - high resource usage
+  /api/computer:
+    requests_per_minute: 5
+    requests_per_hour: 50
+
+  # Reasoning API - moderate limits
+  /api/reasoning:
+    requests_per_minute: 20
+    requests_per_hour: 200
+
+  # Chat API - standard limits
+  /api/chat:
+    requests_per_minute: 60
+    requests_per_hour: 600
+
+  # Document processing - moderate limits
+  /api/documents:
+    requests_per_minute: 30
+    requests_per_hour: 300
+
+  # Health checks - very permissive
+  /api/health:
+    requests_per_minute: 300
+    requests_per_hour: 3000
+
+  # Metrics - permissive for monitoring
+  /metrics:
+    requests_per_minute: 200
+    requests_per_hour: 2000
+
+  # Vendors, commitments, interactions - standard CRUD limits
+  /api/vendors:
+    requests_per_minute: 50
+    requests_per_hour: 500
+
+  /api/commitments:
+    requests_per_minute: 50
+    requests_per_hour: 500
+
+  /api/interactions:
+    requests_per_minute: 50
+    requests_per_hour: 500
+
+# Notes:
+# - Limits are enforced per client (IP or authenticated user)
+# - Sliding window algorithm ensures smooth rate limiting
+# - Redis INCR + EXPIRE provides atomic, distributed enforcement
+# - Headers included: X-RateLimit-Limit-*, X-RateLimit-Remaining-*
+# - 429 status code returned when limits exceeded

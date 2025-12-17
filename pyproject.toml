@@ -1,0 +1,122 @@
+[project]
+name = "local-assistant"
+version = "0.1.0"
+description = "Unicorn-grade local AI assistant with vision, reasoning, and computer use"
+authors = [{name = "Andrew", email = "andrew@local"}]
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+dependencies = [
+    # Core async framework
+    "aiohttp>=3.9.0",
+    "httpx>=0.27.0",
+
+    # Web Framework
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "python-multipart>=0.0.9",
+
+    # AI Provider SDKs
+    "anthropic>=0.40.0",
+    "openai>=1.58.0",
+    "google-generativeai>=0.8.0",
+
+    # CLI & TUI
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "click>=8.1.0",
+
+    # Data & Storage
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.13.0",
+    "asyncpg>=0.29.0",
+    "psycopg2-binary>=2.9.0",
+    "greenlet>=3.0.0",
+    "redis>=5.0.0",
+    "chromadb>=0.5.0",
+    "aiofiles>=23.0.0",
+
+    # Document Processing
+    "pypdf>=5.0.0",
+    "pdf2image>=1.17.0",
+    "pillow>=10.0.0",
+    "pytesseract>=0.3.10",
+    "easyocr>=1.7.0",
+    "pdfplumber>=0.11.0",
+    "pdfminer-six>=20221105",
+    "pypdfium2>=4.0.0",
+
+    # Observability
+    "opentelemetry-api>=1.27.0",
+    "opentelemetry-sdk>=1.27.0",
+    "opentelemetry-instrumentation>=0.48b0",
+    "opentelemetry-exporter-jaeger>=1.21.0",
+    "opentelemetry-exporter-otlp>=1.27.0",
+    "prometheus-client>=0.20.0",
+    "structlog>=24.1.0",
+
+    # Utilities
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "python-dotenv>=1.0.0",
+    "tenacity>=8.2.0",
+    "watchfiles>=0.21.0",
+    "orjson>=3.9.0",
+    "pyyaml>=6.0.0",
+
+    # Gmail Integration
+    "google-api-python-client>=2.181.0",
+    "google-auth-oauthlib>=1.2.1",
+    "google-cloud-pubsub>=2.21.0",
+    "google-auth>=2.29.0",
+    "cryptography>=43.0.0",
+    "pyjwt>=2.8.0",
+
+    # Microsoft Graph Integration
+    "msal>=1.28.0",              # Microsoft Authentication Library
+    "msgraph-sdk>=1.0.0",        # Microsoft Graph SDK for Python
+    "azure-identity>=1.15.0",     # Azure identity support
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "fakeredis>=2.20.0",
+    "responses>=0.24.0",
+    "httpx>=0.27.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "ipython>=8.20.0",
+]
+
+[project.scripts]
+assistant = "cli.main:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["api", "providers", "services", "memory", "observability", "cli"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

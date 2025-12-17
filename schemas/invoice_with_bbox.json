@@ -1,0 +1,306 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InvoiceWithBoundingBoxes",
+  "description": "Invoice data extraction schema with bounding box coordinates for each field",
+  "type": "object",
+  "$defs": {
+    "BoundingBox": {
+      "type": "object",
+      "description": "Bounding box coordinates in normalized format (0-1) relative to page dimensions",
+      "properties": {
+        "page": {
+          "type": "integer",
+          "description": "1-indexed page number",
+          "minimum": 1
+        },
+        "x": {
+          "type": "number",
+          "description": "Normalized X coordinate of top-left corner (0-1)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "y": {
+          "type": "number",
+          "description": "Normalized Y coordinate of top-left corner (0-1)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "width": {
+          "type": "number",
+          "description": "Normalized width (0-1)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "height": {
+          "type": "number",
+          "description": "Normalized height (0-1)",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": ["page", "x", "y", "width", "height"]
+    },
+    "FieldWithBBox": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "description": "The extracted field value"
+        },
+        "bbox": {
+          "$ref": "#/$defs/BoundingBox"
+        },
+        "confidence": {
+          "type": "number",
+          "description": "Confidence score 0-1",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": ["value"]
+    }
+  },
+  "properties": {
+    "VendorName": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "description": "Name of the vendor or supplier"}}}
+      ]
+    },
+    "VendorAddress": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "description": "Full address of the vendor"}}}
+      ]
+    },
+    "VendorTaxId": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "description": "Tax ID or EIN of the vendor"}}}
+      ]
+    },
+    "CustomerName": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "description": "Name of the customer or bill-to party"}}}
+      ]
+    },
+    "CustomerId": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "description": "Customer account number or ID"}}}
+      ]
+    },
+    "CustomerAddress": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "description": "Full billing address of the customer"}}}
+      ]
+    },
+    "ShippingAddress": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "description": "Shipping or delivery address if different from billing"}}}
+      ]
+    },
+    "InvoiceId": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "description": "Unique invoice number or identifier"}}}
+      ]
+    },
+    "InvoiceDate": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "format": "date", "description": "Invoice issue date (ISO 8601 format: YYYY-MM-DD)"}}}
+      ]
+    },
+    "DueDate": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "format": "date", "description": "Payment due date (ISO 8601 format: YYYY-MM-DD)"}}}
+      ]
+    },
+    "PurchaseOrder": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "description": "Purchase order number if referenced"}}}
+      ]
+    },
+    "Items": {
+      "type": "array",
+      "description": "Line items from all pages of the invoice",
+      "items": {
+        "type": "object",
+        "properties": {
+          "Date": {
+            "allOf": [
+              {"$ref": "#/$defs/FieldWithBBox"},
+              {"properties": {"value": {"type": "string", "format": "date", "description": "Date of service or delivery for this line item"}}}
+            ]
+          },
+          "Description": {
+            "allOf": [
+              {"$ref": "#/$defs/FieldWithBBox"},
+              {"properties": {"value": {"type": "string", "description": "Full description of the item or service"}}}
+            ]
+          },
+          "Quantity": {
+            "allOf": [
+              {"$ref": "#/$defs/FieldWithBBox"},
+              {"properties": {"value": {"type": "number", "description": "Quantity or hours"}}}
+            ]
+          },
+          "Unit": {
+            "allOf": [
+              {"$ref": "#/$defs/FieldWithBBox"},
+              {"properties": {"value": {"type": "string", "description": "Unit of measure (hours, each, etc.)"}}}
+            ]
+          },
+          "UnitPrice": {
+            "allOf": [
+              {"$ref": "#/$defs/FieldWithBBox"},
+              {"properties": {"value": {"type": "number", "description": "Price per unit"}}}
+            ]
+          },
+          "Amount": {
+            "allOf": [
+              {"$ref": "#/$defs/FieldWithBBox"},
+              {"properties": {"value": {"type": "number", "description": "Total amount for this line item (Quantity × UnitPrice)"}}}
+            ]
+          },
+          "ProductCode": {
+            "allOf": [
+              {"$ref": "#/$defs/FieldWithBBox"},
+              {"properties": {"value": {"type": "string", "description": "Product or service code if applicable"}}}
+            ]
+          },
+          "Tax": {
+            "allOf": [
+              {"$ref": "#/$defs/FieldWithBBox"},
+              {"properties": {"value": {"type": "number", "description": "Tax amount for this line item if itemized"}}}
+            ]
+          },
+          "TaxRate": {
+            "allOf": [
+              {"$ref": "#/$defs/FieldWithBBox"},
+              {"properties": {"value": {"type": "string", "description": "Tax rate percentage if shown"}}}
+            ]
+          }
+        },
+        "required": ["Description", "Amount"]
+      }
+    },
+    "SubTotal": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "number", "description": "Subtotal before tax and discounts"}}}
+      ]
+    },
+    "TotalTax": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "number", "description": "Total tax amount"}}}
+      ]
+    },
+    "TotalDiscount": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "number", "description": "Total discount amount if applicable"}}}
+      ]
+    },
+    "InvoiceTotal": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "number", "description": "Final total amount due"}}}
+      ]
+    },
+    "AmountDue": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "number", "description": "Outstanding amount due (may differ from total if partial payment made)"}}}
+      ]
+    },
+    "PreviousUnpaidBalance": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "number", "description": "Previous balance carried forward"}}}
+      ]
+    },
+    "PaymentTerms": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "description": "Payment terms (e.g., Net 30, Due on Receipt)"}}}
+      ]
+    },
+    "PaymentDetails": {
+      "type": "object",
+      "description": "Banking details for payment",
+      "properties": {
+        "BankAccountNumber": {
+          "allOf": [
+            {"$ref": "#/$defs/FieldWithBBox"},
+            {"properties": {"value": {"type": "string"}}}
+          ]
+        },
+        "IBAN": {
+          "allOf": [
+            {"$ref": "#/$defs/FieldWithBBox"},
+            {"properties": {"value": {"type": "string"}}}
+          ]
+        },
+        "SWIFT": {
+          "allOf": [
+            {"$ref": "#/$defs/FieldWithBBox"},
+            {"properties": {"value": {"type": "string"}}}
+          ]
+        },
+        "RoutingNumber": {
+          "allOf": [
+            {"$ref": "#/$defs/FieldWithBBox"},
+            {"properties": {"value": {"type": "string"}}}
+          ]
+        }
+      }
+    },
+    "TaxDetails": {
+      "type": "array",
+      "description": "Breakdown of taxes by type or rate",
+      "items": {
+        "type": "object",
+        "properties": {
+          "TaxType": {
+            "allOf": [
+              {"$ref": "#/$defs/FieldWithBBox"},
+              {"properties": {"value": {"type": "string", "description": "Type of tax (Sales, VAT, GST, etc.)"}}}
+            ]
+          },
+          "Rate": {
+            "allOf": [
+              {"$ref": "#/$defs/FieldWithBBox"},
+              {"properties": {"value": {"type": "string", "description": "Tax rate percentage"}}}
+            ]
+          },
+          "Amount": {
+            "allOf": [
+              {"$ref": "#/$defs/FieldWithBBox"},
+              {"properties": {"value": {"type": "number", "description": "Tax amount"}}}
+            ]
+          }
+        }
+      }
+    },
+    "Currency": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "description": "Currency code (USD, EUR, etc.)", "default": "USD"}}}
+      ]
+    },
+    "Notes": {
+      "allOf": [
+        {"$ref": "#/$defs/FieldWithBBox"},
+        {"properties": {"value": {"type": "string", "description": "Additional notes or special instructions"}}}
+      ]
+    }
+  },
+  "required": ["VendorName", "InvoiceId", "InvoiceDate", "InvoiceTotal", "Items"]
+}
